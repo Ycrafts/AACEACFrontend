@@ -9,10 +9,6 @@ function SubcityListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Pagination states are NOT needed for the current non-paginated response
-  // const [currentPage, setCurrentPage] = useState(1);
-  // const [pageSize, setPageSize] = useState(10);
-  // const [totalCount, setTotalCount] = useState(0);
 
   // State for Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,18 +24,12 @@ function SubcityListPage() {
   const [editSubcityName, setEditSubcityName] = useState('');
 
 
-  // --- Data Fetching ---
-  // Simplified fetchSubcities for non-paginated response
   const fetchSubcities = async (search) => { // Removed page and size parameters
     setLoading(true);
     setError(null);
     try {
-      // Pass search term. Pagination params are ignored by backend for this endpoint now.
-      const response = await getSubcities(1, 10, search); // Still pass, but backend ignores
-       // *** Set subcities directly from response.data as it's the array ***
+      const response = await getSubcities(1, 10, search);
       setSubcities(response.data);
-      // Total count and pagination info are not available
-      // setTotalCount(response.data.count);
     } catch (err) {
       setError("Failed to fetch subcities.");
       console.error("Error fetching subcities:", err);
@@ -48,14 +38,10 @@ function SubcityListPage() {
     }
   };
 
-  // --- Effects ---
-
-  // Effect to fetch data when component mounts or debounced search changes
   useEffect(() => {
-    fetchSubcities(debouncedSearchTerm); // Call with just the search term
-  }, [debouncedSearchTerm]); // Re-run effect when debouncedSearchTerm changes
+    fetchSubcities(debouncedSearchTerm);
+  }, [debouncedSearchTerm]); 
 
-  // Effect to debounce search term
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
