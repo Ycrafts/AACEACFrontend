@@ -9,6 +9,7 @@ import {
     getAllOrganizationalUnits,
     getOrganizationalUnits
 } from '../../api';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Add the ParentSelectionModal component
 const ParentSelectionModal = ({ 
@@ -28,12 +29,12 @@ const ParentSelectionModal = ({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-xl transition-colors duration-200">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Select Organizational Unit</h2>
+                    <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Select Organizational Unit</h2>
                     <button 
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700"
+                        className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors duration-200"
                     >
                         ✕
                     </button>
@@ -46,20 +47,20 @@ const ParentSelectionModal = ({
                         placeholder="Search organizational units..."
                         value={searchTerm}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="w-full px-4 py-2 border rounded-md"
+                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                     />
                 </div>
 
                 {/* Loading State */}
                 {loading && (
-                    <div className="text-center py-4">
+                    <div className="text-center py-4 text-slate-500 dark:text-slate-300">
                         <p>Loading organizational units...</p>
                     </div>
                 )}
 
                 {/* Error State */}
                 {error && (
-                    <div className="text-red-500 text-center py-4">
+                    <div className="text-red-500 dark:text-red-300 text-center py-4">
                         <p>{error}</p>
                     </div>
                 )}
@@ -70,11 +71,11 @@ const ParentSelectionModal = ({
                         {organizationalUnits.map(unit => (
                             <div
                                 key={unit.id}
-                                className="p-3 border rounded-md hover:bg-gray-50 cursor-pointer"
+                                className="p-3 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors duration-150 bg-white dark:bg-slate-800"
                                 onClick={() => onSelect(unit)}
                             >
-                                <div className="font-medium">{unit.name}</div>
-                                <div className="text-sm text-gray-500">
+                                <div className="font-medium text-slate-800 dark:text-slate-100">{unit.name}</div>
+                                <div className="text-sm text-slate-500 dark:text-slate-400">
                                     Division: {unit.division_name}
                                     {unit.parent_name && ` | Parent: ${unit.parent_name}`}
                                 </div>
@@ -89,17 +90,17 @@ const ParentSelectionModal = ({
                         <button
                             onClick={() => onPageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className="px-3 py-1 border rounded disabled:opacity-50"
+                            className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded bg-gray-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-50 transition-colors duration-200"
                         >
                             Previous
                         </button>
-                        <span className="px-3 py-1">
+                        <span className="px-3 py-1 text-slate-700 dark:text-slate-300">
                             Page {currentPage} of {totalPages}
                         </span>
                         <button
                             onClick={() => onPageChange(currentPage + 1)}
                             disabled={currentPage === totalPages}
-                            className="px-3 py-1 border rounded disabled:opacity-50"
+                            className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded bg-gray-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-50 transition-colors duration-200"
                         >
                             Next
                         </button>
@@ -338,307 +339,310 @@ function EmployeeListPage() {
 
     // --- Render ---
     return (
-        <div className="p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Employees</h2>
-
-            {error && <p className="text-red-500 mb-4">{error}</p>}
-
-            {/* Search Bar */}
-            <div className="mb-4">
-                <input
-                    type="text"
-                    placeholder="Search employees..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-            </div>
-
-            {/* Create New Button */}
-            {!showCreateForm && !showEditForm && (
-                <button
-                    onClick={handleCreateClick}
-                    className="mb-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md shadow"
-                >
-                    Add New Employee
-                </button>
-            )}
-
-            {/* Create Form */}
-            {showCreateForm && (
-                <div className="mb-4 p-6 border rounded-md bg-gray-50">
-                    <h3 className="text-xl font-semibold mb-4">Add New Employee</h3>
-                    {loadingDropdowns ? (
-                        <p>Loading form data...</p>
-                    ) : (
-                        <form onSubmit={handleCreateSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">First Name</label>
-                                <input
-                                    type="text"
-                                    name="fname"
-                                    value={formData.fname}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Middle Name</label>
-                                <input
-                                    type="text"
-                                    name="mname"
-                                    value={formData.mname}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                                <input
-                                    type="text"
-                                    name="lname"
-                                    value={formData.lname}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                                <input
-                                    type="text"
-                                    name="phone_no"
-                                    value={formData.phone_no}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Organizational Unit</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={formData.organizationalunit ? 
-                                            (orgUnits.find(u => u.id === parseInt(formData.organizationalunit))?.name || '') 
-                                            : ''}
-                                        readOnly
-                                        className="w-full px-3 py-2 border rounded-md pr-10 cursor-pointer"
-                                        onClick={() => setShowOrgUnitModal(true)}
-                                        placeholder="Click to select organizational unit"
-                                    />
-                                    <div 
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
-                                        onClick={() => setShowOrgUnitModal(true)}
-                                    >
-                                        <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Role</label>
-                                <select
-                                    name="role"
-                                    value={formData.role || ''}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                >
-                                    <option value="">Select Role</option>
-                                    {employeeRoles.map(role => (
-                                        <option key={role.id} value={role.id}>{role.role}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex justify-end space-x-4">
-                                <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md">Save</button>
-                                <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
-                            </div>
-                        </form>
-                    )}
-                </div>
-            )}
-
-            {/* Edit Form */}
-            {showEditForm && currentEditItem && (
-                <div className="mb-4 p-6 border rounded-md bg-gray-50">
-                    <h3 className="text-xl font-semibold mb-4">Edit Employee</h3>
-                    {loadingDropdowns ? (
-                        <p>Loading form data...</p>
-                    ) : (
-                        <form onSubmit={handleEditSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">First Name</label>
-                                <input
-                                    type="text"
-                                    name="fname"
-                                    value={formData.fname}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Middle Name</label>
-                                <input
-                                    type="text"
-                                    name="mname"
-                                    value={formData.mname}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                                <input
-                                    type="text"
-                                    name="lname"
-                                    value={formData.lname}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                                <input
-                                    type="text"
-                                    name="phone_no"
-                                    value={formData.phone_no}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Organizational Unit</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={formData.organizationalunit ? 
-                                            (orgUnits.find(u => u.id === parseInt(formData.organizationalunit))?.name || '') 
-                                            : ''}
-                                        readOnly
-                                        className="w-full px-3 py-2 border rounded-md pr-10 cursor-pointer"
-                                        onClick={() => setShowOrgUnitModal(true)}
-                                        placeholder="Click to select organizational unit"
-                                    />
-                                    <div 
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
-                                        onClick={() => setShowOrgUnitModal(true)}
-                                    >
-                                        <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Role</label>
-                                <select
-                                    name="role"
-                                    value={formData.role || ''}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border rounded-md"
-                                    required
-                                >
-                                    <option value="">Select Role</option>
-                                    {employeeRoles.map(role => (
-                                        <option key={role.id} value={role.id}>{role.role}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex justify-end space-x-4">
-                                <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md">Update</button>
-                                <button type="button" onClick={() => setShowEditForm(false)} className="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
-                            </div>
-                        </form>
-                    )}
-                </div>
-            )}
-
-            {/* Employees Table */}
-            {loading ? (
-                <p>Loading...</p>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border rounded-lg">
-                        <thead>
-                            <tr>
-                                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Name</th>
-                                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Phone</th>
-                                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Organizational Unit</th>
-                                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Role</th>
-                                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {employees.map(employee => (
-                                <tr key={employee.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                                        {`${employee.fname} ${employee.mname} ${employee.lname}`}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                                        {employee.phone_no}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                                        {employee.organizationalunit_name}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                                        {employee.role_name || 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                                        <button
-                                            onClick={() => handleEditClick(employee)}
-                                            className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md shadow mr-2"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteClick(employee.id)}
-                                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            {/* Pagination */}
-            {!loading && totalCount > 0 && (
-                <div className="mt-4 flex justify-between items-center">
-                    <span>
-                        Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
-                    </span>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setCurrentPage(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </button>
-                        <span>Page {currentPage}</span>
-                        <button
-                            onClick={() => setCurrentPage(currentPage + 1)}
-                            disabled={currentPage * pageSize >= totalCount}
-                            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+            <div className="container mx-auto px-4 py-8">
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-8">
+                    <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 mb-6">Employees</h2>
+                    {error && <p className="text-red-500 dark:text-red-300 mb-4">{error}</p>}
+                    {/* Search Bar */}
+                    <div className="mb-4">
+                        <input
+                            type="text"
+                            placeholder="Search employees..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                        />
                     </div>
-                </div>
-            )}
+                    {/* Create New Button */}
+                    {!showCreateForm && !showEditForm && (
+                        <button
+                            onClick={handleCreateClick}
+                            className="mb-4 px-4 py-2 font-medium rounded-md shadow transition-colors duration-200
+                                bg-indigo-100 text-indigo-700 hover:bg-indigo-200
+                                dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
+                        >
+                            Add New Employee
+                        </button>
+                    )}
+                    {/* Create Form */}
+                    {showCreateForm && (
+                        <div className="mb-4 p-6 border rounded-md bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                            <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Add New Employee</h3>
+                            {loadingDropdowns ? (
+                                <p className="text-slate-500 dark:text-slate-300">Loading form data...</p>
+                            ) : (
+                                <form onSubmit={handleCreateSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">First Name</label>
+                                        <input
+                                            type="text"
+                                            name="fname"
+                                            value={formData.fname}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Middle Name</label>
+                                        <input
+                                            type="text"
+                                            name="mname"
+                                            value={formData.mname}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Last Name</label>
+                                        <input
+                                            type="text"
+                                            name="lname"
+                                            value={formData.lname}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Phone Number</label>
+                                        <input
+                                            type="text"
+                                            name="phone_no"
+                                            value={formData.phone_no}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Organizational Unit</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={formData.organizationalunit ? 
+                                                    (orgUnits.find(u => u.id === parseInt(formData.organizationalunit))?.name || '') 
+                                                    : ''}
+                                                readOnly
+                                                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md pr-10 cursor-pointer bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                                                onClick={() => setShowOrgUnitModal(true)}
+                                                placeholder="Click to select organizational unit"
+                                            />
+                                            <div 
+                                                className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                                                onClick={() => setShowOrgUnitModal(true)}
+                                            >
+                                                <svg className="h-5 w-5 text-gray-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Role</label>
+                                        <select
+                                            name="role"
+                                            value={formData.role || ''}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        >
+                                            <option value="">Select Role</option>
+                                            {employeeRoles.map(role => (
+                                                <option key={role.id} value={role.id}>{role.role}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex justify-end space-x-4 pt-2">
+                                        <button type="submit" className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors duration-200">Save</button>
+                                        <button type="button" onClick={() => setShowCreateForm(false)} className="px-4 py-2 bg-gray-300 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-md transition-colors duration-200">Cancel</button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    )}
 
+                    {/* Edit Form */}
+                    {showEditForm && currentEditItem && (
+                        <div className="mb-4 p-6 border rounded-md bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                            <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Edit Employee</h3>
+                            {loadingDropdowns ? (
+                                <p className="text-slate-500 dark:text-slate-300">Loading form data...</p>
+                            ) : (
+                                <form onSubmit={handleEditSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">First Name</label>
+                                        <input
+                                            type="text"
+                                            name="fname"
+                                            value={formData.fname}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Middle Name</label>
+                                        <input
+                                            type="text"
+                                            name="mname"
+                                            value={formData.mname}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Last Name</label>
+                                        <input
+                                            type="text"
+                                            name="lname"
+                                            value={formData.lname}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Phone Number</label>
+                                        <input
+                                            type="text"
+                                            name="phone_no"
+                                            value={formData.phone_no}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Organizational Unit</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={formData.organizationalunit ? 
+                                                    (orgUnits.find(u => u.id === parseInt(formData.organizationalunit))?.name || '') 
+                                                    : ''}
+                                                readOnly
+                                                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md pr-10 cursor-pointer bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                                                onClick={() => setShowOrgUnitModal(true)}
+                                                placeholder="Click to select organizational unit"
+                                            />
+                                            <div 
+                                                className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                                                onClick={() => setShowOrgUnitModal(true)}
+                                            >
+                                                <svg className="h-5 w-5 text-gray-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Role</label>
+                                        <select
+                                            name="role"
+                                            value={formData.role || ''}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            required
+                                        >
+                                            <option value="">Select Role</option>
+                                            {employeeRoles.map(role => (
+                                                <option key={role.id} value={role.id}>{role.role}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex justify-end space-x-4 pt-2">
+                                        <button type="submit" className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors duration-200">Update</button>
+                                        <button type="button" onClick={() => setShowEditForm(false)} className="px-4 py-2 bg-gray-300 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-md transition-colors duration-200">Cancel</button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Employees Table */}
+                    {loading ? (
+                        <div className="flex justify-center items-center py-12">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+                        </div>
+                    ) : (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                                    <thead className="bg-slate-50 dark:bg-slate-900/50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Phone</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Organizational Unit</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Role</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+                                        {employees.map(employee => (
+                                            <tr key={employee.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
+                                                    {`${employee.fname} ${employee.mname ? employee.mname + ' ' : ''}${employee.lname}`}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{employee.phone_no}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                                                    {organizationalUnits.find(ou => ou.id === employee.organizationalunit)?.name || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                                                    {employee.role_name || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button
+                                                        onClick={() => handleEditClick(employee)}
+                                                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 mr-4"
+                                                    >
+                                                        <PencilSquareIcon className="h-5 w-5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(employee.id)}
+                                                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                                                    >
+                                                        <TrashIcon className="h-5 w-5" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {!loading && totalCount > 0 && (
+                        <div className="mt-4 flex justify-between items-center">
+                            <span className="text-slate-700 dark:text-slate-300">
+                                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
+                            </span>
+                            <div className="flex space-x-2 items-center">
+                                <button
+                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-slate-700 dark:text-slate-300">Page {currentPage}</span>
+                                <button
+                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                    disabled={currentPage * pageSize >= totalCount}
+                                    className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
             {/* Add the organizational unit selection modal */}
             <ParentSelectionModal
                 isOpen={showOrgUnitModal}

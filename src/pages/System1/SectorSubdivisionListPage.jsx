@@ -1,6 +1,7 @@
 // src/pages/System1/SectorSubdivisionListPage.jsx
 import React, { useState, useEffect } from 'react';
 import { getSectorSubdivisionTypes, createSectorSubdivisionType, updateSectorSubdivisionType, deleteSectorSubdivisionType } from '../../api'; // Import API functions
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 function SectorSubdivisionListPage() {
   const [types, setTypes] = useState([]); // State to hold the list of types
@@ -127,11 +128,7 @@ function SectorSubdivisionListPage() {
   };
 
   // --- Delete Handler ---
-  // src/pages/System1/SectorSubdivisionListPage.jsx
-// ... (previous imports and state variables) ...
-
-// --- Delete Handler ---
-const handleDeleteClick = async (typeId) => {
+  const handleDeleteClick = async (typeId) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
         await deleteSectorSubdivisionType(typeId);
@@ -161,123 +158,170 @@ const handleDeleteClick = async (typeId) => {
     }
   };
   
-  // ... (rest of the component code) ...
-
   // --- Render ---
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Sector Subdivision Types</h2>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg p-8">
+          <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 mb-6">Sector Subdivision Types</h2>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+          {error && <p className="text-red-500 dark:text-red-300 mb-4">{error}</p>}
 
-      {/* Search Bar */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search types..."
-          value={searchTerm}
-          onChange={handleSearchInputChange}
-          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus->ring-blue-400"
-        />
-      </div>
-
-      {/* Create New Button */}
-      {!showCreateForm && !showEditForm && (
-         <button
-           onClick={handleCreateClick}
-           className="mb-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md shadow"
-         >
-           Add New Type
-         </button>
-      )}
-
-
-      {/* Create Form */}
-      {showCreateForm && (
-        <div className="mb-4 p-4 border rounded-md bg-gray-50">
-          <h3 className="text-xl font-semibold mb-2">Add New Sector Subdivision Type</h3>
-          <form onSubmit={handleCreateSubmit} className="flex items-center space-x-4">
+          {/* Search Bar */}
+          <div className="mb-4">
             <input
               type="text"
-              placeholder="Type Name"
-              value={newTypeName}
-              onChange={(e) => setNewTypeName(e.target.value)}
-              className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Search types..."
+              value={searchTerm}
+              onChange={handleSearchInputChange}
+              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
             />
-            <button type="submit" className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md">Save</button>
-            <button type="button" onClick={handleCreateCancel} className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md">Cancel</button>
-          </form>
+          </div>
+
+          {/* Create New Button */}
+          {!showCreateForm && !showEditForm && (
+            <button
+              onClick={handleCreateClick}
+              className="mb-4 px-4 py-2 font-medium rounded-md shadow transition-colors duration-200
+                bg-indigo-100 text-indigo-700 hover:bg-indigo-200
+                dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800"
+            >
+              Add New Type
+            </button>
+          )}
+
+          {/* Create Form */}
+          {showCreateForm && (
+            <div className="mb-4 p-6 border rounded-md bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Add New Sector Subdivision Type</h3>
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Type Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter type name"
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                  />
+                </div>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors duration-200"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateCancel}
+                    className="px-4 py-2 bg-gray-300 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-md transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Edit Form */}
+          {showEditForm && currentEditItem && (
+            <div className="mb-4 p-6 border rounded-md bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <h3 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Edit Sector Subdivision Type</h3>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Type Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter type name"
+                    value={editTypeName}
+                    onChange={(e) => setEditTypeName(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                  />
+                </div>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors duration-200"
+                  >
+                    Update
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleEditCancel}
+                    className="px-4 py-2 bg-gray-300 dark:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-md transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Loading and Data Table */}
+          {loading ? (
+            <div className="text-center py-4 text-slate-500 dark:text-slate-300">
+              <p>Loading sector subdivision types...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead className="bg-slate-50 dark:bg-slate-800">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+                  {Array.isArray(types) && types.map((type) => (
+                    <tr key={type.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {type.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleEditClick(type)}
+                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4 transition-colors duration-150"
+                        >
+                          <PencilSquareIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(type.id)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-150"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {Array.isArray(types) && types.length === 0 && !loading && (
+                    <tr>
+                      <td colSpan="2" className="px-6 py-4 text-center text-slate-500 dark:text-slate-400">
+                        No sector subdivision types found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination Controls (Remove or comment out as not applicable) */}
+          {/* {!loading && totalCount > 0 && ( ... )} */}
+
         </div>
-      )}
-
-       {/* Edit Form */}
-       {showEditForm && currentEditItem && (
-         <div className="mb-4 p-4 border rounded-md bg-gray-50">
-           <h3 className="text-xl font-semibold mb-2">Edit Sector Subdivision Type</h3>
-           <form onSubmit={handleEditSubmit} className="flex items-center space-x-4">
-             <input
-               type="text"
-               placeholder="Type Name"
-               value={editTypeName}
-               onChange={(e) => setEditTypeName(e.target.value)}
-               className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus->ring-blue-400"
-             />
-             <button type="submit" className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md">Update</button>
-             <button type="button" onClick={handleEditCancel} className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md">Cancel</button>
-           </form>
-         </div>
-       )}
-
-
-      {/* Loading and Data Table */}
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          {/* Added Array.isArray check for robustness */}
-          <table className="min-w-full bg-white border rounded-lg">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Use types directly as it's the array */}
-              {Array.isArray(types) && types.map((type) => (
-                <tr key={type.id}>
-                  <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">{type.name}</td>
-                  <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-800">
-                    <button
-                      onClick={() => handleEditClick(type)}
-                      className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md shadow mr-2"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(type.id)}
-                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-               {/* Keep the "No data found" check */}
-               {Array.isArray(types) && types.length === 0 && !loading && (
-                 <tr>
-                   <td colSpan="2" className="px-6 py-4 text-center text-gray-500">No data found.</td>
-                 </tr>
-               )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Pagination Controls (Remove or comment out as not applicable) */}
-      {/* {!loading && totalCount > 0 && ( ... )} */}
-
+      </div>
     </div>
   );
 }

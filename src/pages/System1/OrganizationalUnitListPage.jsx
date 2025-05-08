@@ -1,5 +1,6 @@
 // src/pages/System1/OrganizationalUnitListPage.jsx
 import React, { useState, useEffect } from 'react';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 // Import all necessary API functions, including the new getAll... ones
 import {
     getOrganizationalUnits,
@@ -72,42 +73,40 @@ const getFormFieldsToShow = (formData, divisions, parentOrganizationalUnits) => 
   };
 
   const selectedParent = formData.parent ?
-                         (parentOrganizationalUnits.find(unit => unit.id === parseInt(formData.parent)) || null)
-                         : null;
+      (parentOrganizationalUnits.find(unit => unit.id === parseInt(formData.parent)) || null)
+      : null;
 
   if (selectedParent) {
-      fieldsToShow.division = true;
-
+      // Case when parent is selected
       const parentDivisionName = selectedParent.division_name;
 
       if (parentDivisionName === "Subcity") {
+          // If parent's division is Subcity, show subcity_subdiv_type and woreda
+          fieldsToShow.subcity_subdiv_type = true;
           fieldsToShow.woreda = true;
       } else if (parentDivisionName === "Sector Office") {
           // If parent's division is Sector Office
-          const parentHasParent = !!selectedParent.parent;
-          if (parentHasParent) {
-              // If parent has a parent, show woreda
-              fieldsToShow.woreda = true;
-          } else {
+          if (!selectedParent.parent) {
               // If parent has no parent, show subcity
               fieldsToShow.subcity = true;
+          } else {
+              // If parent has a parent, show woreda
+              fieldsToShow.woreda = true;
           }
       }
   } else {
-      // No parent selected - show division field for manual selection
+      // Case when no parent is selected
       fieldsToShow.division = true;
 
-      // Get the name of the manually selected division
+      // Get the name of the selected division
       const selectedDivisionName = formData.division ?
-                                   (divisions.find(div => div.id === parseInt(formData.division))?.name || null)
-                                   : null;
+          (divisions.find(div => div.id === parseInt(formData.division))?.name || null)
+          : null;
 
       if (selectedDivisionName) {
           if (selectedDivisionName === "Subcity") {
-              // If division is Subcity, show subcity field
               fieldsToShow.subcity = true;
           } else if (selectedDivisionName === "Sector Office") {
-              // If division is Sector Office, show sector subdivision type
               fieldsToShow.sector_subdiv_type = true;
           }
           // For College and Hospital, no additional fields are shown
@@ -115,6 +114,196 @@ const getFormFieldsToShow = (formData, divisions, parentOrganizationalUnits) => 
   }
 
   return fieldsToShow;
+};
+
+// Add the ParentSelectionModal component
+const ParentSelectionModal = ({ 
+    isOpen, 
+    onClose, 
+    onSelect, 
+    organizationalUnits, 
+    loading, 
+    error,
+    currentPage,
+    totalPages,
+    onPageChange,
+    searchTerm,
+    onSearchChange
+}) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-xl transition-colors duration-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Select Parent Organizational Unit</h2>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors duration-200"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-4">
+                    <input
+                        type="text"
+                        placeholder="Search organizational units..."
+                        value={searchTerm}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                    />
+                </div>
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="text-center py-4 text-slate-500 dark:text-slate-300">
+                        <p>Loading organizational units...</p>
+                    </div>
+                )}
+
+                {/* Error State */}
+                {error && (
+                    <div className="text-red-500 dark:text-red-300 text-center py-4">
+                        <p>{error}</p>
+                    </div>
+                )}
+
+                {/* No Parent Option */}
+                <div
+                    className="p-3 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors duration-150 bg-white dark:bg-slate-800 mb-2"
+                    onClick={() => onSelect({ id: null, name: 'No Parent' })}
+                >
+                    <div className="font-medium text-slate-800 dark:text-slate-100">No Parent</div>
+                </div>
+
+                {/* Organizational Units List */}
+                {!loading && !error && (
+                    <div className="space-y-2">
+                        {organizationalUnits.map(unit => (
+                            <div
+                                key={unit.id}
+                                className="p-3 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors duration-150 bg-white dark:bg-slate-800"
+                                onClick={() => onSelect(unit)}
+                            >
+                                <div className="font-medium text-slate-800 dark:text-slate-100">{unit.name}</div>
+                                <div className="text-sm text-slate-500 dark:text-slate-400">
+                                    Division: {unit.division_name}
+                                    {unit.parent_name && ` | Parent: ${unit.parent_name}`}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Add helper functions for getting subdivision type names
+const getSectorSubdivTypeNameById = (id, sectorSubdivTypes) => {
+    if (!id) return null;
+    const type = sectorSubdivTypes.find(type => type.id === parseInt(id));
+    return type ? type.name : null;
+};
+
+const getSubcitySubdivTypeNameById = (id, subcitySubdivTypes) => {
+    if (!id) return null;
+    const type = subcitySubdivTypes.find(type => type.id === parseInt(id));
+    return type ? type.name : null;
+};
+
+// Add a helper function to fetch all pages of woredas
+const fetchAllWoredas = async () => {
+    let allWoredas = [];
+    let currentPage = 1;
+    let hasMorePages = true;
+    
+    while (hasMorePages) {
+        try {
+            const response = await getAllWoredas(currentPage, 100); // Increased page size to 100
+            const data = response.data;
+            
+            if (data.results) {
+                allWoredas = [...allWoredas, ...data.results];
+            }
+            
+            // Check if there are more pages
+            hasMorePages = !!data.next;
+            currentPage++;
+        } catch (error) {
+            console.error('Error fetching woredas page:', error);
+            break;
+        }
+    }
+    
+    console.log('Total woredas fetched:', allWoredas.length);
+    return allWoredas;
+};
+
+// Update the fetchDropdownData function
+const fetchDropdownData = async () => {
+    setLoadingDropdowns(true);
+    try {
+        // Fetch data for all dropdowns concurrently
+        const [
+            divisionsRes,
+            sectorSubdivTypesRes,
+            subcitySubdivTypesRes,
+            organizationalUnitsRes,
+            subcitiesRes,
+            woredasRes,
+        ] = await Promise.all([
+            getAllDivisions(),
+            getAllSectorSubdivisionTypes(),
+            getAllSubcitySubdivisionTypes(),
+            getAllOrganizationalUnits(),
+            getAllSubcities(),
+            getAllWoredas(1, 1000), // Request a large page size to get all woredas at once
+        ]);
+
+        // Set all the data
+        setDivisions(divisionsRes.data || []);
+        setSectorSubdivTypes(sectorSubdivTypesRes.data || []);
+        setSubcitySubdivTypes(subcitySubdivTypesRes.data || []);
+        setSubcities(subcitiesRes.data || []);
+        
+        // Handle woredas data - support both paginated and non-paginated responses
+        if (woredasRes.data) {
+            // Check if the response is paginated (has results property)
+            const woredasData = woredasRes.data.results || woredasRes.data;
+            if (Array.isArray(woredasData)) {
+                console.log('Setting woredas:', woredasData.length);
+                setWoredas(woredasData);
+            } else {
+                console.error("Invalid woredas data format:", woredasData);
+                setWoredas([]);
+            }
+        } else {
+            console.error("No woredas data in response:", woredasRes);
+            setWoredas([]);
+        }
+
+        // Handle organizational units
+        if (organizationalUnitsRes.data && organizationalUnitsRes.data.results) {
+            const allOrganizationalUnits = organizationalUnitsRes.data.results;
+            const potentialParents = allOrganizationalUnits.filter(unit =>
+                unit.id !== (currentEditItem ? currentEditItem.id : null)
+            );
+            setParentOrganizationalUnits(potentialParents);
+        } else {
+            console.error("Unexpected organizational units response format:", organizationalUnitsRes.data);
+            setParentOrganizationalUnits([]);
+        }
+
+    } catch (err) {
+        console.error("Failed to fetch dropdown data:", err);
+        setError("Failed to load necessary data for the form. Please try again.");
+        setTimeout(() => setError(null), 10000);
+    } finally {
+        setLoadingDropdowns(false);
+    }
 };
 
 function OrganizationalUnitListPage() {
@@ -158,6 +347,15 @@ function OrganizationalUnitListPage() {
   const [woredas, setWoredas] = useState([]);
   const [loadingDropdowns, setLoadingDropdowns] = useState(true); // Loading state for all dropdowns
 
+  // Modify the parent units state and fetching
+  const [showParentModal, setShowParentModal] = useState(false);
+  const [parentSearchTerm, setParentSearchTerm] = useState('');
+  const [parentCurrentPage, setParentCurrentPage] = useState(1);
+  const [parentPageSize] = useState(10);
+  const [parentTotalPages, setParentTotalPages] = useState(1);
+  const [parentUnits, setParentUnits] = useState([]);
+  const [loadingParentUnits, setLoadingParentUnits] = useState(false);
+
 
   // --- Data Fetching ---
 
@@ -180,66 +378,68 @@ function OrganizationalUnitListPage() {
     }
   };
 
-  // Fetch data for all dropdowns
-    // Fetch data for all dropdowns
-    const fetchDropdownData = async () => {
-      setLoadingDropdowns(true);
-      try {
-          // Fetch data for all dropdowns concurrently
-          const [
-              divisionsRes,
-              sectorSubdivTypesRes,
-              subcitySubdivTypesRes,
-              organizationalUnitsRes, // For parent dropdown
-              subcitiesRes,
-              woredasRes,
-          ] = await Promise.all([
-              getAllDivisions(),
-              getAllSectorSubdivisionTypes(),
-              getAllSubcitySubdivisionTypes(),
-              getAllOrganizationalUnits(), // This API call returns the data
-              getAllSubcities(),
-              getAllWoredas(),
-          ]);
+  // Update the fetchDropdownData function
+  const fetchDropdownData = async () => {
+    setLoadingDropdowns(true);
+    try {
+        // Fetch data for all dropdowns concurrently
+        const [
+            divisionsRes,
+            sectorSubdivTypesRes,
+            subcitySubdivTypesRes,
+            organizationalUnitsRes,
+            subcitiesRes,
+            woredasRes,
+        ] = await Promise.all([
+            getAllDivisions(),
+            getAllSectorSubdivisionTypes(),
+            getAllSubcitySubdivisionTypes(),
+            getAllOrganizationalUnits(),
+            getAllSubcities(),
+            getAllWoredas(1, 1000), // Request a large page size to get all woredas at once
+        ]);
 
-          setDivisions(divisionsRes.data);
-          setSectorSubdivTypes(sectorSubdivTypesRes.data);
-          setSubcitySubdivTypes(subcitySubdivTypesRes.data);
+        // Set all the data
+        setDivisions(divisionsRes.data || []);
+        setSectorSubdivTypes(sectorSubdivTypesRes.data || []);
+        setSubcitySubdivTypes(subcitySubdivTypesRes.data || []);
+        setSubcities(subcitiesRes.data || []);
+        
+        // Handle woredas data - support both paginated and non-paginated responses
+        if (woredasRes.data) {
+            // Check if the response is paginated (has results property)
+            const woredasData = woredasRes.data.results || woredasRes.data;
+            if (Array.isArray(woredasData)) {
+                console.log('Setting woredas:', woredasData.length);
+                setWoredas(woredasData);
+            } else {
+                console.error("Invalid woredas data format:", woredasData);
+                setWoredas([]);
+            }
+        } else {
+            console.error("No woredas data in response:", woredasRes);
+            setWoredas([]);
+        }
 
-          // --- CORRECTED LOGIC HERE ---
-          // Access the 'results' array from the organizationalUnitsRes.data
-          const allOrganizationalUnits = organizationalUnitsRes.data.results;
+        // Handle organizational units
+        if (organizationalUnitsRes.data && organizationalUnitsRes.data.results) {
+            const allOrganizationalUnits = organizationalUnitsRes.data.results;
+            const potentialParents = allOrganizationalUnits.filter(unit =>
+                unit.id !== (currentEditItem ? currentEditItem.id : null)
+            );
+            setParentOrganizationalUnits(potentialParents);
+        } else {
+            console.error("Unexpected organizational units response format:", organizationalUnitsRes.data);
+            setParentOrganizationalUnits([]);
+        }
 
-          // Check if allOrganizationalUnits is actually an array before filtering
-          if (Array.isArray(allOrganizationalUnits)) {
-               // Filter out the current unit from the parent dropdown list when editing
-               // (This filtering doesn't affect the Create form as currentEditItem is null)
-               const potentialParents = allOrganizationalUnits.filter(unit =>
-                   unit.id !== (currentEditItem ? currentEditItem.id : null)
-                   // Add any other rules for what can be a parent here if needed
-               );
-               setParentOrganizationalUnits(potentialParents);
-          } else {
-               // Handle unexpected data format for organizational units
-               console.error("API did not return an array in the 'results' key for organizational units:", organizationalUnitsRes.data);
-               setParentOrganizationalUnits([]); // Set to empty array to prevent further errors
-               // Optionally, you could set an error state to inform the user
-          }
-          // --- END OF CORRECTED LOGIC ---
-
-
-          setSubcities(subcitiesRes.data);
-          setWoredas(woredasRes.data);
-
-      } catch (err) {
-          console.error("Failed to fetch dropdown data:", err);
-          // This catch block will handle general API errors (like the 500)
-          // You might want to set a more user-friendly error message here
-          setError("Failed to load necessary data for the form. Please try again.");
-          setTimeout(() => setError(null), 10000); // Clear error after 10 seconds
-      } finally {
-          setLoadingDropdowns(false);
-      }
+    } catch (err) {
+        console.error("Failed to fetch dropdown data:", err);
+        setError("Failed to load necessary data for the form. Please try again.");
+        setTimeout(() => setError(null), 10000);
+    } finally {
+        setLoadingDropdowns(false);
+    }
   };
 
 
@@ -391,10 +591,15 @@ function OrganizationalUnitListPage() {
 
        try {
            // Call the create API function with the form data
-           await createOrganizationalUnit(formData);
+           const response = await createOrganizationalUnit(formData);
            setShowCreateForm(false);
-           // Refresh the list
-           fetchOrganizationalUnits(currentPage, pageSize, debouncedSearchTerm);
+           
+           // Refresh both the main list and the parent units list
+           await Promise.all([
+               fetchOrganizationalUnits(currentPage, pageSize, debouncedSearchTerm),
+               fetchDropdownData() // This will refresh parentOrganizationalUnits
+           ]);
+           
            setError(null); // Clear errors on success
        } catch (err) {
            console.error("Error creating organizational unit:", err);
@@ -524,589 +729,723 @@ function OrganizationalUnitListPage() {
       }
     };
 
+  // Modify the handleParentSelect function to set all derived fields
+  const handleParentSelect = (unit) => {
+      setFormData(prev => ({
+          ...prev,
+          parent: unit.id,
+          parent_name: unit.name,
+          // Set division from parent
+          division: unit.division || null,
+          // Set subdivision types if they exist
+          sector_subdiv_type: unit.sector_subdiv_type || null,
+          subcity_subdiv_type: unit.subcity_subdiv_type || null,
+          // Set location fields if they exist
+          subcity: unit.subcity || null,
+          woreda: unit.woreda || null
+      }));
+      setShowParentModal(false);
+  };
+
+  // Modify the fetchParentUnits function to filter out organizational units that have grandparents
+  const fetchParentUnits = async (page, size, search) => {
+      setLoadingParentUnits(true);
+      try {
+          const response = await getOrganizationalUnits(page, size, search);
+          const allUnits = response.data.results;
+          // Filter out Hospital and College divisions AND units that have grandparents
+          const filteredUnits = allUnits.filter(unit => {
+              if (unit.division_name === "Hospital" || unit.division_name === "College") {
+                  return false;
+              }
+              if (unit.parent) {
+                  // Find the parent unit
+                  const parentUnit = allUnits.find(u => u.id === unit.parent);
+                  // If the parent unit exists and it has a parent, this unit has a grandparent
+                  if (parentUnit && parentUnit.parent) {
+                      return false;
+                  }
+              }
+              return true;
+          });
+          setParentUnits(filteredUnits);
+          setParentTotalPages(Math.ceil(filteredUnits.length / parentPageSize));
+      } catch (err) {
+          console.error("Error fetching parent units:", err);
+          setError("Failed to fetch parent organizational units.");
+      } finally {
+          setLoadingParentUnits(false);
+      }
+  };
+
+  // Modify the effect to use the new fetch function
+  useEffect(() => {
+      if (showParentModal) {
+          fetchParentUnits(parentCurrentPage, parentPageSize, parentSearchTerm);
+      }
+  }, [showParentModal, parentCurrentPage, parentSearchTerm]);
+
+  // Add handler for parent search
+  const handleParentSearch = (value) => {
+      setParentSearchTerm(value);
+      setParentCurrentPage(1); // Reset to first page on new search
+  };
+
+  // Update the getFilteredWoredas function to add more logging
+  const getFilteredWoredas = (subcityId) => {
+      console.log('Filtering woredas for subcity:', subcityId);
+      console.log('Total woredas available:', woredas.length);
+      
+      // Ensure woredas is an array
+      if (!Array.isArray(woredas)) {
+          console.error("Woredas is not an array:", woredas);
+          return [];
+      }
+      
+      // If no subcity is selected, return all woredas
+      if (!subcityId) {
+          return woredas;
+      }
+
+      // Convert subcityId to number for comparison
+      const numericSubcityId = parseInt(subcityId);
+      console.log('Looking for woredas with subcity ID:', numericSubcityId);
+      
+      // Filter woredas where subcity matches the selected subcity
+      const filtered = woredas.filter(woreda => {
+          if (!woreda || woreda.subcity === undefined) {
+              console.warn('Invalid woreda object:', woreda);
+              return false;
+          }
+          const woredaSubcityId = parseInt(woreda.subcity);
+          const matches = woredaSubcityId === numericSubcityId;
+          if (matches) {
+              console.log('Found matching woreda:', woreda.name);
+          }
+          return matches;
+      });
+
+      console.log('Filtered woredas count:', filtered.length);
+      return filtered;
+  };
 
   // --- Render ---
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Organizational Units</h2>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
+      <div className="container mx-auto px-6 py-8">
+        <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 mb-6">Organizational Units</h2>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-red-600 dark:text-red-300">{error}</p>
+          </div>
+        )}
 
-      {/* Search Bar */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by name, division, subcity, woreda..." // Updated placeholder
-          value={searchTerm}
-          onChange={handleSearchInputChange}
-          className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
-      </div>
+        {/* Search Bar */}
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search by name, division, subcity, woreda..."
+            value={searchTerm}
+            onChange={handleSearchInputChange}
+            className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
+          />
+        </div>
 
-      {/* Create New Button */}
-       {/* Only show the button if no forms are currently open */}
-      {!showCreateForm && !showEditForm && (
-         <button
-           onClick={handleCreateClick}
-           className="mb-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md shadow"
-         >
-           Add New Organizational Unit
-         </button>
-      )}
+        {/* Create New Button */}
+        {!showCreateForm && !showEditForm && (
+          <button
+            onClick={handleCreateClick}
+            className="mb-6 px-4 py-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:hover:bg-indigo-800 rounded-lg transition-colors duration-200"
+          >
+            Add New Organizational Unit
+          </button>
+        )}
 
+        {/* Create Form */}
+        {showCreateForm && (
+          <div className="mb-6 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4">Add New Organizational Unit</h3>
+            {loadingDropdowns ? (
+              <p className="text-slate-500 dark:text-slate-400">Loading form data...</p>
+            ) : (
+              <form onSubmit={handleCreateSubmit} className="space-y-4">
+                {/* Use the helper function to determine which fields to show */}
+                {/* Pass parentOrganizationalUnits to the helper */}
+                {Object.entries(getFormFieldsToShow(formData, divisions, parentOrganizationalUnits)).map(([fieldName, isVisible]) => {
+                    // Skip if the field should not be visible according to getFormFieldsToShow
+                    if (!isVisible) return null;
 
-      {/* Create Form - Conditionally render */}
-{showCreateForm && (
-  <div className="mb-4 p-6 border rounded-md bg-gray-50">
-      <h3 className="text-xl font-semibold mb-4">Add New Organizational Unit</h3>
-      {/* *** START OF CREATE FORM JSX *** */}
-      {loadingDropdowns ? (
-          <p>Loading form data...</p>
-      ) : (
-          <form onSubmit={handleCreateSubmit} className="space-y-4">
-              {/* Use the helper function to determine which fields to show */}
-              {/* Pass parentOrganizationalUnits to the helper */}
-              {Object.entries(getFormFieldsToShow(formData, divisions, parentOrganizationalUnits)).map(([fieldName, isVisible]) => {
-                  // Skip if the field should not be visible according to getFormFieldsToShow
-                  if (!isVisible) return null;
+                    // Determine if the field is derived (only applies to division and subdivision types when parent is selected)
+                    const isDerivedField = !!formData.parent &&
+                                           (fieldName === 'division' ||
+                                            fieldName === 'sector_subdiv_type' ||
+                                            fieldName === 'subcity_subdiv_type');
 
-                  // Determine if the field is derived (only applies to division and subdivision types when parent is selected)
-                  const isDerivedField = !!formData.parent &&
-                                         (fieldName === 'division' ||
-                                          fieldName === 'sector_subdiv_type' ||
-                                          fieldName === 'subcity_subdiv_type');
-
-                  // Render the appropriate input/select or read-only text
-                  switch (fieldName) {
-                      case 'name':
-                          return (
-                              <div key={fieldName}>
-                                  <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                  <input
-                                      id={`create-${fieldName}`}
-                                      type="text"
-                                      name={fieldName}
-                                      value={formData[fieldName]}
-                                      onChange={handleInputChange}
-                                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                      required
-                                  />
-                              </div>
-                          );
-                      case 'required_employees_no':
-                           return (
-                               <div key={fieldName}>
-                                   <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Required Employees No.</label>
-                                   <input
-                                       id={`create-${fieldName}`}
-                                       type="number"
-                                       name={fieldName}
-                                       value={formData[fieldName] || ''}
-                                       onChange={handleInputChange}
-                                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                       min="0"
-                                   />
-                               </div>
-                           );
-                      case 'parent':
-                           // The parent field should ALWAYS be a selectable dropdown if isVisible is true
-                           // It is NOT a derived field in the same way division/subdivision types are.
-                           return (
-                               <div key={fieldName}>
-                                   <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Parent Organizational Unit</label>
-                                   <select
-                                       id={`create-${fieldName}`}
-                                       name={fieldName}
-                                       value={formData[fieldName] || ''}
-                                       onChange={handleInputChange}
-                                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                       disabled={loadingDropdowns || parentOrganizationalUnits.length === 0}
-                                   >
-                                       <option value="">Select Parent (Optional)</option>
-                                       {/* Filter out the current unit from the parent dropdown list when editing - handled in fetchDropdownData */}
-                                       {Array.isArray(parentOrganizationalUnits) && parentOrganizationalUnits.map(unit => (
-                                           <option key={unit.id} value={unit.id}>{unit.name}</option>
-                                       ))}
-                                   </select>
-                                    {parentOrganizationalUnits.length === 0 && !loadingDropdowns && <p className="text-sm text-gray-500 mt-1">No suitable parent units available.</p>}
-                               </div>
-                           );
-                      case 'division':
-                          // This field is derived if parent is selected, manual otherwise
-                          const derivedDivisionName = isDerivedField ? getDivisionNameById(formData.division) : null;
-                          return (
-                              <div key={fieldName}>
-                                  <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Division</label>
-                                  {isDerivedField ? (
-                                      // Display derived division name as read-only text
-                                      <p className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-700">
-                                          {derivedDivisionName || 'N/A'}
-                                      </p>
-                                  ) : (
-                                      // Allow manual selection if no parent
-                                      <select
-                                          id={`create-${fieldName}`}
-                                          name={fieldName}
-                                          value={formData[fieldName] || ''}
-                                          onChange={handleInputChange}
-                                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                          disabled={loadingDropdowns || divisions.length === 0}
-                                          required={!formData.parent}
-                                      >
-                                          <option value="">Select Division</option>
-                                          {Array.isArray(divisions) && divisions.map(div => (
-                                              <option key={div.id} value={div.id}>{div.name}</option>
-                                          ))}
-                                      </select>
-                                  )}
-                                   {divisions.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Divisions available.</p>}
-                              </div>
-                          );
-                      case 'sector_subdiv_type':
-                           // This field is derived if parent is selected, manual otherwise
-                           const derivedSectorSubdivName = isDerivedField ? getSectorSubdivTypeNameById(formData.sector_subdiv_type) : null;
-                           return (
-                               <div key={fieldName}>
-                                   <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Sector Subdivision Type</label>
-                                   {isDerivedField ? (
-                                        // Display derived type name as read-only text
-                                        <p className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-700">
-                                            {derivedSectorSubdivName || 'N/A'}
+                    // Render the appropriate input/select or read-only text
+                    switch (fieldName) {
+                        case 'name':
+                            return (
+                                <div key={fieldName}>
+                                    <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Name</label>
+                                    <input
+                                        id={`create-${fieldName}`}
+                                        type="text"
+                                        name={fieldName}
+                                        value={formData[fieldName]}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                        required
+                                    />
+                                </div>
+                            );
+                        case 'required_employees_no':
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Required Employees No.</label>
+                                     <input
+                                         id={`create-${fieldName}`}
+                                         type="number"
+                                         name={fieldName}
+                                         value={formData[fieldName] || ''}
+                                         onChange={handleInputChange}
+                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                         min="0"
+                                     />
+                                 </div>
+                             );
+                        case 'parent':
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Parent Organizational Unit</label>
+                                     <div className="relative">
+                                         <input
+                                             type="text"
+                                             value={formData.parent ? 
+                                                 (parentOrganizationalUnits.find(u => u.id === parseInt(formData.parent))?.name || 'No Parent') 
+                                                 : 'No Parent'}
+                                             readOnly
+                                             className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100"
+                                             onClick={() => setShowParentModal(true)}
+                                             placeholder="Click to select parent organizational unit"
+                                         />
+                                         <div 
+                                             className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                                             onClick={() => setShowParentModal(true)}
+                                         >
+                                             <svg className="h-5 w-5 text-gray-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                             </svg>
+                                         </div>
+                                     </div>
+                                 </div>
+                             );
+                        case 'division':
+                            // This field is derived if parent is selected, manual otherwise
+                            const derivedDivisionName = isDerivedField ? getDivisionNameById(formData.division) : null;
+                            return (
+                                <div key={fieldName}>
+                                    <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Division</label>
+                                    {isDerivedField ? (
+                                        // Display derived division name as read-only text
+                                        <p className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                                            {derivedDivisionName || 'N/A'}
                                         </p>
-                                   ) : (
-                                        // Allow manual selection if no parent and field is visible by rule
+                                    ) : (
+                                        // Allow manual selection if no parent
                                         <select
                                             id={`create-${fieldName}`}
                                             name={fieldName}
                                             value={formData[fieldName] || ''}
                                             onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                            disabled={loadingDropdowns || sectorSubdivTypes.length === 0}
-                                            required={isVisible && !formData.parent}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            disabled={loadingDropdowns || divisions.length === 0}
+                                            required={!formData.parent}
                                         >
-                                            <option value="">Select Sector Subdivision Type</option>
-                                            {Array.isArray(sectorSubdivTypes) && sectorSubdivTypes.map(type => (
-                                                <option key={type.id} value={type.id}>{type.name}</option>
+                                            <option value="">Select Division</option>
+                                            {Array.isArray(divisions) && divisions.map(div => (
+                                                <option key={div.id} value={div.id}>{div.name}</option>
                                             ))}
                                         </select>
-                                   )}
-                                    {sectorSubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Sector Subdivision Types available.</p>}
-                               </div>
-                           );
-                      case 'subcity_subdiv_type':
-                           // This field is derived if parent is selected, manual otherwise
-                           const isDerivedSubcitySubdiv = isDerivedField; // Same derivation logic
-                           const derivedSubcitySubdivName = isDerivedSubcitySubdiv ? getSubcitySubdivTypeNameById(formData.subcity_subdiv_type) : null;
-                            return (
-                                <div key={fieldName}>
-                                    <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Subcity Subdivision Type</label>
-                                    {isDerivedSubcitySubdiv ? (
-                                         // Display derived type name as read-only text
-                                         <p className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-700">
-                                             {derivedSubcitySubdivName || 'N/A'}
-                                         </p>
-                                    ) : (
-                                         // Allow manual selection if no parent and field is visible by rule
-                                         <select
-                                             id={`create-${fieldName}`}
-                                             name={fieldName}
-                                             value={formData[fieldName] || ''}
-                                             onChange={handleInputChange}
-                                             className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                             disabled={loadingDropdowns || subcitySubdivTypes.length === 0}
-                                             required={isVisible && !formData.parent}
-                                         >
-                                             <option value="">Select Subcity Subdivision Type</option>
-                                             {Array.isArray(subcitySubdivTypes) && subcitySubdivTypes.map(type => (
-                                                 <option key={type.id} value={type.id}>{type.name}</option>
-                                             ))}
-                                         </select>
                                     )}
-                                     {subcitySubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcity Subdivision Types available.</p>}
+                                     {divisions.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Divisions available.</p>}
                                 </div>
                             );
-                      case 'subcity':
-                           return (
-                               <div key={fieldName}>
-                                   <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Subcity</label>
-                                   <select
-                                       id={`create-${fieldName}`}
-                                       name={fieldName}
-                                       value={formData[fieldName] || ''}
-                                       onChange={handleInputChange}
-                                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                       disabled={loadingDropdowns || subcities.length === 0}
-                                   >
-                                       <option value="">Select Subcity (Optional)</option>
-                                       {Array.isArray(subcities) && subcities.map(sub => (
-                                           <option key={sub.id} value={sub.id}>{sub.name}</option>
-                                       ))}
-                                   </select>
-                                    {subcities.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcities available.</p>}
-                               </div>
-                           );
-                      case 'woreda':
-                           return (
-                               <div key={fieldName}>
-                                   <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Woreda</label>
-                                   <select
-                                       id={`create-${fieldName}`}
-                                       name={fieldName}
-                                       value={formData[fieldName] || ''}
-                                       onChange={handleInputChange}
-                                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                       disabled={loadingDropdowns || woredas.length === 0}
-                                   >
-                                       <option value="">Select Woreda (Optional)</option>
-                                       {Array.isArray(woredas) && woredas.map(wor => (
-                                           <option key={wor.id} value={wor.id}>{wor.name}</option>
-                                       ))}
-                                   </select>
-                                    {woredas.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Woredas available.</p>}
-                               </div>
-                           );
-                      default:
-                          return null;
-                  }
-              })}
-
-              <div className="flex justify-end space-x-4 mt-6">
-                  <button type="submit" className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow">Save</button>
-                  <button type="button" onClick={handleCreateCancel} className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md">Cancel</button>
-              </div>
-          </form>
-      )}
-      {/* *** END OF CREATE FORM JSX *** */}
-  </div>
-)}
-
-       {/* Edit Form - Conditionally render */}
-       {showEditForm && currentEditItem && (
-            <div className="mb-4 p-6 border rounded-md bg-gray-50">
-                <h3 className="text-xl font-semibold mb-4">Edit Organizational Unit</h3>
-                 {/* *** START OF EDIT FORM JSX (Similar to Create, but pre-populated) *** */}
-                 {loadingDropdowns ? (
-                     <p>Loading form data...</p>
-                 ) : (
-                  <form onSubmit={handleEditSubmit} className="space-y-4">
-                  {/* Use the helper function to determine which fields to show */}
-                  {/* Pass parentOrganizationalUnits to the helper */}
-                  {Object.entries(getFormFieldsToShow(formData, divisions, parentOrganizationalUnits)).map(([fieldName, isVisible]) => {
-                      // Skip if the field should not be visible
-                      if (!isVisible) return null;
-
-                      // Determine if the field is derived (only if parent is selected)
-                      const isDerivedField = !!formData.parent &&
-                                             (fieldName === 'division' ||
-                                              fieldName === 'sector_subdiv_type' ||
-                                              fieldName === 'subcity_subdiv_type');
-
-                      // Render the appropriate input/select or read-only text
-                      switch (fieldName) {
-                          case 'name':
+                        case 'sector_subdiv_type':
+                             // This field is derived if parent is selected, manual otherwise
+                             const derivedSectorSubdivName = isDerivedField ? getSectorSubdivTypeNameById(formData.sector_subdiv_type, sectorSubdivTypes) : null;
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Sector Subdivision Type</label>
+                                     {isDerivedField ? (
+                                          // Display derived type name as read-only text
+                                          <p className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                                              {derivedSectorSubdivName || 'N/A'}
+                                          </p>
+                                     ) : (
+                                          // Allow manual selection if no parent and field is visible by rule
+                                          <select
+                                              id={`create-${fieldName}`}
+                                              name={fieldName}
+                                              value={formData[fieldName] || ''}
+                                              onChange={handleInputChange}
+                                              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                              disabled={loadingDropdowns || sectorSubdivTypes.length === 0}
+                                              required={isVisible && !formData.parent}
+                                          >
+                                              <option value="">Select Sector Subdivision Type</option>
+                                              {Array.isArray(sectorSubdivTypes) && sectorSubdivTypes.map(type => (
+                                                  <option key={type.id} value={type.id}>{type.name}</option>
+                                              ))}
+                                          </select>
+                                     )}
+                                      {sectorSubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Sector Subdivision Types available.</p>}
+                                 </div>
+                             );
+                        case 'subcity_subdiv_type':
+                             // This field is derived if parent is selected, manual otherwise
+                             const isDerivedSubcitySubdiv = isDerivedField;
+                             const derivedSubcitySubdivName = isDerivedSubcitySubdiv ? getSubcitySubdivTypeNameById(formData.subcity_subdiv_type, subcitySubdivTypes) : null;
                               return (
                                   <div key={fieldName}>
-                                      <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                      <input
-                                          id={`edit-${fieldName}`}
-                                          type="text"
-                                          name={fieldName}
-                                          value={formData[fieldName]}
-                                          onChange={handleInputChange}
-                                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                          required
-                                      />
+                                      <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Subcity Subdivision Type</label>
+                                      {isDerivedSubcitySubdiv ? (
+                                           // Display derived type name as read-only text
+                                           <p className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                                               {derivedSubcitySubdivName || 'N/A'}
+                                           </p>
+                                      ) : (
+                                           // Allow manual selection if no parent and field is visible by rule
+                                           <select
+                                               id={`create-${fieldName}`}
+                                               name={fieldName}
+                                               value={formData[fieldName] || ''}
+                                               onChange={handleInputChange}
+                                               className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                               disabled={loadingDropdowns || subcitySubdivTypes.length === 0}
+                                               required={isVisible && !formData.parent}
+                                           >
+                                               <option value="">Select Subcity Subdivision Type</option>
+                                               {Array.isArray(subcitySubdivTypes) && subcitySubdivTypes.map(type => (
+                                                   <option key={type.id} value={type.id}>{type.name}</option>
+                                               ))}
+                                           </select>
+                                      )}
+                                       {subcitySubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcity Subdivision Types available.</p>}
                                   </div>
                               );
-                          case 'required_employees_no':
-                               return (
-                                   <div key={fieldName}>
-                                       <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Required Employees No.</label>
-                                       <input
-                                           id={`edit-${fieldName}`}
-                                           type="number"
-                                           name={fieldName}
-                                           value={formData[fieldName] || ''}
-                                           onChange={handleInputChange}
-                                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                           min="0"
-                                       />
-                                   </div>
-                               );
-                          case 'parent':
-                               return (
-                                   <div key={fieldName}>
-                                       <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Parent Organizational Unit</label>
-                                       <select
-                                           id={`edit-${fieldName}`}
-                                           name={fieldName}
-                                           value={formData[fieldName] || ''}
-                                           onChange={handleInputChange}
-                                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                           disabled={loadingDropdowns || parentOrganizationalUnits.length === 0}
-                                       >
-                                           <option value="">Select Parent (Optional)</option>
-                                           {Array.isArray(parentOrganizationalUnits) && parentOrganizationalUnits.map(unit => (
-                                               <option key={unit.id} value={unit.id}>{unit.name}</option>
-                                           ))}
-                                       </select>
-                                        {parentOrganizationalUnits.length === 0 && !loadingDropdowns && <p className="text-sm text-gray-500 mt-1">No suitable parent units available.</p>}
-                                   </div>
-                               );
-                          case 'division':
-                              const derivedDivisionName = isDerivedField ? getDivisionNameById(formData.division) : null;
-                              return (
-                                  <div key={fieldName}>
-                                      <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Division</label>
-                                      {isDerivedField ? (
-                                          // Display derived division name as read-only text
-                                          <p className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-700">
-                                              {derivedDivisionName || 'N/A'}
+                        case 'subcity':
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Subcity</label>
+                                     <select
+                                         id={`create-${fieldName}`}
+                                         name={fieldName}
+                                         value={formData[fieldName] || ''}
+                                         onChange={handleInputChange}
+                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                         disabled={loadingDropdowns || subcities.length === 0}
+                                     >
+                                         <option value="">Select Subcity (Optional)</option>
+                                         {Array.isArray(subcities) && subcities.map(sub => (
+                                             <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                         ))}
+                                     </select>
+                                      {subcities.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcities available.</p>}
+                                 </div>
+                             );
+                        case 'woreda':
+                             const filteredWoredas = getFilteredWoredas(formData.subcity);
+                             console.log("Rendering woreda field with filtered woredas:", filteredWoredas);
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`create-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Woreda</label>
+                                     <select
+                                         id={`create-${fieldName}`}
+                                         name={fieldName}
+                                         value={formData[fieldName] || ''}
+                                         onChange={handleInputChange}
+                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                         disabled={loadingDropdowns || filteredWoredas.length === 0}
+                                     >
+                                         <option value="">Select Woreda (Optional)</option>
+                                         {Array.isArray(filteredWoredas) && filteredWoredas.map(wor => (
+                                             <option key={wor.id} value={wor.id}>{wor.name}</option>
+                                         ))}
+                                     </select>
+                                      {filteredWoredas.length === 0 && !loadingDropdowns && (
+                                          <p className="text-sm text-gray-500 mt-1">
+                                              {formData.subcity ? 
+                                                  `No Woredas available for selected Subcity (ID: ${formData.subcity})` : 
+                                                  "Please select a Subcity first."}
                                           </p>
-                                      ) : (
-                                          // Allow manual selection if no parent
+                                      )}
+                                 </div>
+                             );
+                        default:
+                            return null;
+                    }
+                })}
+
+                <div className="flex justify-end space-x-4 mt-6">
+                    <button type="submit" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">Save</button>
+                    <button type="button" onClick={handleCreateCancel} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg transition-colors duration-200">Cancel</button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* Edit Form */}
+        {showEditForm && currentEditItem && (
+          <div className="mb-6 p-6 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-4">Edit Organizational Unit</h3>
+            {loadingDropdowns ? (
+              <p className="text-slate-500 dark:text-slate-400">Loading form data...</p>
+            ) : (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                {/* Use the helper function to determine which fields to show */}
+                {/* Pass parentOrganizationalUnits to the helper */}
+                {Object.entries(getFormFieldsToShow(formData, divisions, parentOrganizationalUnits)).map(([fieldName, isVisible]) => {
+                    // Skip if the field should not be visible
+                    if (!isVisible) return null;
+
+                    // Determine if the field is derived (only if parent is selected)
+                    const isDerivedField = !!formData.parent &&
+                                           (fieldName === 'division' ||
+                                            fieldName === 'sector_subdiv_type' ||
+                                            fieldName === 'subcity_subdiv_type');
+
+                    // Render the appropriate input/select or read-only text
+                    switch (fieldName) {
+                        case 'name':
+                            return (
+                                <div key={fieldName}>
+                                    <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Name</label>
+                                    <input
+                                        id={`edit-${fieldName}`}
+                                        type="text"
+                                        name={fieldName}
+                                        value={formData[fieldName]}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                        required
+                                    />
+                                </div>
+                            );
+                        case 'required_employees_no':
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Required Employees No.</label>
+                                     <input
+                                         id={`edit-${fieldName}`}
+                                         type="number"
+                                         name={fieldName}
+                                         value={formData[fieldName] || ''}
+                                         onChange={handleInputChange}
+                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                         min="0"
+                                     />
+                                 </div>
+                             );
+                        case 'parent':
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Parent Organizational Unit</label>
+                                     <div className="relative">
+                                         <input
+                                             type="text"
+                                             value={formData.parent ? 
+                                                 (parentOrganizationalUnits.find(u => u.id === parseInt(formData.parent))?.name || 'No Parent') 
+                                                 : 'No Parent'}
+                                             readOnly
+                                             className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100"
+                                             onClick={() => setShowParentModal(true)}
+                                             placeholder="Click to select parent organizational unit"
+                                         />
+                                         <div 
+                                             className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                                             onClick={() => setShowParentModal(true)}
+                                         >
+                                             <svg className="h-5 w-5 text-gray-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                             </svg>
+                                         </div>
+                                     </div>
+                                 </div>
+                             );
+                        case 'division':
+                            const derivedDivisionName = isDerivedField ? getDivisionNameById(formData.division) : null;
+                            return (
+                                <div key={fieldName}>
+                                    <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Division</label>
+                                    {isDerivedField ? (
+                                        // Display derived division name as read-only text
+                                        <p className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                                            {derivedDivisionName || 'N/A'}
+                                        </p>
+                                    ) : (
+                                        // Allow manual selection if no parent
+                                        <select
+                                            id={`edit-${fieldName}`}
+                                            name={fieldName}
+                                            value={formData[fieldName] || ''}
+                                            onChange={handleInputChange}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                            disabled={loadingDropdowns || divisions.length === 0}
+                                            required={!formData.parent}
+                                        >
+                                            <option value="">Select Division</option>
+                                            {Array.isArray(divisions) && divisions.map(div => (
+                                                <option key={div.id} value={div.id}>{div.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                     {divisions.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Divisions available.</p>}
+                                </div>
+                            );
+                        case 'sector_subdiv_type':
+                             const derivedSectorSubdivName = isDerivedField ? getSectorSubdivTypeNameById(formData.sector_subdiv_type, sectorSubdivTypes) : null;
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Sector Subdivision Type</label>
+                                     {isDerivedField ? (
+                                          // Display derived type name as read-only text
+                                          <p className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                                              {derivedSectorSubdivName || 'N/A'}
+                                          </p>
+                                     ) : (
+                                          // Allow manual selection if no parent and field is visible by rule
                                           <select
                                               id={`edit-${fieldName}`}
                                               name={fieldName}
                                               value={formData[fieldName] || ''}
                                               onChange={handleInputChange}
-                                              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                              disabled={loadingDropdowns || divisions.length === 0}
-                                              required={!formData.parent}
+                                              className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                              disabled={loadingDropdowns || sectorSubdivTypes.length === 0}
+                                              required={isVisible && !formData.parent}
                                           >
-                                              <option value="">Select Division</option>
-                                              {Array.isArray(divisions) && divisions.map(div => (
-                                                  <option key={div.id} value={div.id}>{div.name}</option>
+                                              <option value="">Select Sector Subdivision Type</option>
+                                              {Array.isArray(sectorSubdivTypes) && sectorSubdivTypes.map(type => (
+                                                  <option key={type.id} value={type.id}>{type.name}</option>
                                               ))}
                                           </select>
+                                     )}
+                                      {sectorSubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Sector Subdivision Types available.</p>}
+                                 </div>
+                             );
+                        case 'subcity_subdiv_type':
+                             const isDerivedSubcitySubdiv = isDerivedField;
+                             const derivedSubcitySubdivName = isDerivedSubcitySubdiv ? getSubcitySubdivTypeNameById(formData.subcity_subdiv_type, subcitySubdivTypes) : null;
+                              return (
+                                  <div key={fieldName}>
+                                      <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Subcity Subdivision Type</label>
+                                      {isDerivedSubcitySubdiv ? (
+                                           // Display derived type name as read-only text
+                                           <p className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100">
+                                               {derivedSubcitySubdivName || 'N/A'}
+                                           </p>
+                                      ) : (
+                                           // Allow manual selection if no parent and field is visible by rule
+                                           <select
+                                               id={`edit-${fieldName}`}
+                                               name={fieldName}
+                                               value={formData[fieldName] || ''}
+                                               onChange={handleInputChange}
+                                               className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                               disabled={loadingDropdowns || subcitySubdivTypes.length === 0}
+                                               required={isVisible && !formData.parent}
+                                           >
+                                               <option value="">Select Subcity Subdivision Type</option>
+                                               {Array.isArray(subcitySubdivTypes) && subcitySubdivTypes.map(type => (
+                                                   <option key={type.id} value={type.id}>{type.name}</option>
+                                               ))}
+                                           </select>
                                       )}
-                                       {divisions.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Divisions available.</p>}
+                                       {subcitySubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcity Subdivision Types available.</p>}
                                   </div>
                               );
-                          case 'sector_subdiv_type':
-                               const derivedSectorSubdivName = isDerivedField ? getSectorSubdivTypeNameById(formData.sector_subdiv_type) : null;
-                               return (
-                                   <div key={fieldName}>
-                                       <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Sector Subdivision Type</label>
-                                       {isDerivedField ? (
-                                            // Display derived type name as read-only text
-                                            <p className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-700">
-                                                {derivedSectorSubdivName || 'N/A'}
-                                            </p>
-                                       ) : (
-                                            // Allow manual selection if no parent and field is visible by rule
-                                            <select
-                                                id={`edit-${fieldName}`}
-                                                name={fieldName}
-                                                value={formData[fieldName] || ''}
-                                                onChange={handleInputChange}
-                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                                disabled={loadingDropdowns || sectorSubdivTypes.length === 0}
-                                                required={isVisible && !formData.parent}
-                                            >
-                                                <option value="">Select Sector Subdivision Type</option>
-                                                {Array.isArray(sectorSubdivTypes) && sectorSubdivTypes.map(type => (
-                                                    <option key={type.id} value={type.id}>{type.name}</option>
-                                                ))}
-                                            </select>
-                                       )}
-                                        {sectorSubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Sector Subdivision Types available.</p>}
-                                   </div>
-                               );
-                          case 'subcity_subdiv_type':
-                               const isDerivedSubcitySubdiv = isDerivedField;
-                               const derivedSubcitySubdivName = isDerivedSubcitySubdiv ? getSubcitySubdivTypeNameById(formData.subcity_subdiv_type) : null;
-                                return (
-                                    <div key={fieldName}>
-                                        <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Subcity Subdivision Type</label>
-                                        {isDerivedSubcitySubdiv ? (
-                                             // Display derived type name as read-only text
-                                             <p className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-700">
-                                                 {derivedSubcitySubdivName || 'N/A'}
-                                             </p>
-                                        ) : (
-                                             // Allow manual selection if no parent and field is visible by rule
-                                             <select
-                                                 id={`edit-${fieldName}`}
-                                                 name={fieldName}
-                                                 value={formData[fieldName] || ''}
-                                                 onChange={handleInputChange}
-                                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                                 disabled={loadingDropdowns || subcitySubdivTypes.length === 0}
-                                                 required={isVisible && !formData.parent}
-                                             >
-                                                 <option value="">Select Subcity Subdivision Type</option>
-                                                 {Array.isArray(subcitySubdivTypes) && subcitySubdivTypes.map(type => (
-                                                     <option key={type.id} value={type.id}>{type.name}</option>
-                                                 ))}
-                                             </select>
-                                        )}
-                                         {subcitySubdivTypes.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcity Subdivision Types available.</p>}
-                                    </div>
-                                );
-                          case 'subcity':
-                               return (
-                                   <div key={fieldName}>
-                                       <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Subcity</label>
-                                       <select
-                                           id={`edit-${fieldName}`}
-                                           name={fieldName}
-                                           value={formData[fieldName] || ''}
-                                           onChange={handleInputChange}
-                                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                           disabled={loadingDropdowns || subcities.length === 0}
-                                       >
-                                           <option value="">Select Subcity (Optional)</option>
-                                           {Array.isArray(subcities) && subcities.map(sub => (
-                                               <option key={sub.id} value={sub.id}>{sub.name}</option>
-                                           ))}
-                                       </select>
-                                        {subcities.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcities available.</p>}
-                                   </div>
-                               );
-                          case 'woreda':
-                               return (
-                                   <div key={fieldName}>
-                                       <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 mb-1">Woreda</label>
-                                       <select
-                                           id={`edit-${fieldName}`}
-                                           name={fieldName}
-                                           value={formData[fieldName] || ''}
-                                           onChange={handleInputChange}
-                                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-blue-500"
-                                           disabled={loadingDropdowns || woredas.length === 0}
-                                       >
-                                           <option value="">Select Woreda (Optional)</option>
-                                           {Array.isArray(woredas) && woredas.map(wor => (
-                                               <option key={wor.id} value={wor.id}>{wor.name}</option>
-                                           ))}
-                                       </select>
-                                        {woredas.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Woredas available.</p>}
-                                   </div>
-                               );
-                          default:
-                              return null;
-                      }
-                   })}
+                        case 'subcity':
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Subcity</label>
+                                     <select
+                                         id={`edit-${fieldName}`}
+                                         name={fieldName}
+                                         value={formData[fieldName] || ''}
+                                         onChange={handleInputChange}
+                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                         disabled={loadingDropdowns || subcities.length === 0}
+                                     >
+                                         <option value="">Select Subcity (Optional)</option>
+                                         {Array.isArray(subcities) && subcities.map(sub => (
+                                             <option key={sub.id} value={sub.id}>{sub.name}</option>
+                                         ))}
+                                     </select>
+                                      {subcities.length === 0 && !loadingDropdowns && <p className="text-sm text-red-500 mt-1">No Subcities available.</p>}
+                                 </div>
+                             );
+                        case 'woreda':
+                             const editFilteredWoredas = getFilteredWoredas(formData.subcity);
+                             return (
+                                 <div key={fieldName}>
+                                     <label htmlFor={`edit-${fieldName}`} className="block text-sm font-medium text-gray-700 dark:text-slate-100 mb-1">Woreda</label>
+                                     <select
+                                         id={`edit-${fieldName}`}
+                                         name={fieldName}
+                                         value={formData[fieldName] || ''}
+                                         onChange={handleInputChange}
+                                         className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+                                         disabled={loadingDropdowns || editFilteredWoredas.length === 0}
+                                     >
+                                         <option value="">Select Woreda (Optional)</option>
+                                         {Array.isArray(editFilteredWoredas) && editFilteredWoredas.map(wor => (
+                                             <option key={wor.id} value={wor.id}>{wor.name}</option>
+                                         ))}
+                                     </select>
+                                      {editFilteredWoredas.length === 0 && !loadingDropdowns && <p className="text-sm text-gray-500 mt-1">No Woredas available for selected Subcity.</p>}
+                                 </div>
+                             );
+                        default:
+                            return null;
+                    }
+                })}
 
-                   <div className="flex justify-end space-x-4 mt-6">
-                       <button type="submit" className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow">Update</button>
-                       <button type="button" onClick={handleEditCancel} className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md">Cancel</button>
-                   </div>
-               </form>
-
-                 )}
-                {/* *** END OF EDIT FORM JSX *** */}
-            </div>
+                <div className="flex justify-end space-x-4 mt-6">
+                    <button type="submit" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">Update</button>
+                    <button type="button" onClick={handleEditCancel} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg transition-colors duration-200">Cancel</button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
 
-
-      {/* Loading and Data Table */}
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border rounded-lg">
-            {/* ... thead and tbody (with expandable rows) ... */}
-            <thead>
-              <tr>
-                {/* Displaying only the name column for now */}
-                <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Name</th>
-                 <th className="px-6 py-3 border-b-2 border-gray-300 text-left text-sm leading-4 text-gray-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.isArray(organizationalUnits) && organizationalUnits.map((unit) => (
-                // Use fragment <> </> to group the main row and the expandable row
-                <React.Fragment key={unit.id}>
-                  <tr
-                     className="hover:bg-gray-50 cursor-pointer" // Add hover effect and cursor pointer
-                     onClick={() => handleRowClick(unit.id)} // Add click handler to the row
-                  >
-                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
-                       {unit.name}
-                        {/* Optional: Add an indicator for expanded state */}
-                       <span className="ml-2 text-sm text-gray-500">
-                           {expandedRowId === unit.id ? '▲' : '▼'}
-                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200 text-sm leading-5 text-gray-800">
-                      <button
-                        onClick={(e) => {
-                           e.stopPropagation(); // Prevent row click when clicking button
-                           handleEditClick(unit);
-                        }}
-                        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md shadow mr-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                         onClick={(e) => {
-                            e.stopPropagation(); // Prevent row click when clicking button
-                            handleDeleteClick(unit.id);
-                         }}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow"
-                      >
-                        Delete
-                      </button>
+        {/* Loading and Data Table */}
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-slate-500 dark:text-slate-400">Loading organizational units...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 bg-slate-50 dark:bg-slate-800 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 bg-slate-50 dark:bg-slate-800 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                {Array.isArray(organizationalUnits) && organizationalUnits.map((unit) => (
+                  <React.Fragment key={unit.id}>
+                    <tr
+                      className="hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors duration-200"
+                      onClick={() => handleRowClick(unit.id)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
+                        {unit.name}
+                        <span className="ml-2 text-slate-500 dark:text-slate-400">
+                          {expandedRowId === unit.id ? '▲' : '▼'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center space-x-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(unit);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors duration-200"
+                            title="Edit"
+                          >
+                            <PencilSquareIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(unit.id);
+                            }}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
+                            title="Delete"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedRowId === unit.id && (
+                      <tr>
+                        <td colSpan="2" className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                          <div className="p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+                            <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Organizational Unit Details</h4>
+                            {getOrganizationalUnitDetailsToShow(unit).map((detail, index) => (
+                              <p key={index} className="mb-2 last:mb-0 text-slate-700 dark:text-slate-100">
+                                <span className="font-medium text-slate-900 dark:text-slate-100">{detail.label}:</span> {detail.value}
+                              </p>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+                {Array.isArray(organizationalUnits) && organizationalUnits.length === 0 && !loading && (
+                  <tr>
+                    <td colSpan="2" className="px-6 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                      No organizational units found.
                     </td>
                   </tr>
-                  {/* Expandable Row for Details */}
-                  {expandedRowId === unit.id && (
-                      <tr>
-                          <td colSpan="2" className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                              {/* CONTENT OF THE EXPANDABLE DETAIL DIV using the helper function */}
-                              <div className="p-4 bg-white rounded shadow-sm">
-                                  <h4 className="text-lg font-semibold mb-4">Organizational Unit Details</h4>
-                                  {/* Use the helper function to get details and map over them */}
-                                  {getOrganizationalUnitDetailsToShow(unit).map((detail, index) => (
-                                       <p key={index} className="mb-2 last:mb-0"><strong>{detail.label}:</strong> {detail.value}</p> // Added mb-2 for spacing
-                                  ))}
-
-                                  {/* TODO: Add logic to fetch/display nested Organizational Units if applicable (for hierarchy view) */}
-                              </div>
-                          </td>
-                      </tr>
-                  )}
-                </React.Fragment>
-              ))}
-               {Array.isArray(organizationalUnits) && organizationalUnits.length === 0 && !loading && (
-                 <tr>
-                   <td colSpan="2" className="px-6 py-4 text-center text-gray-500">No organizational units found.</td>
-                 </tr>
-               )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Pagination Controls */}
-      {!loading && totalCount > 0 && (
-        <div className="mt-4 flex justify-between items-center">
-          <span>
-            Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
-          </span>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <span>Page {currentPage}</span>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage * pageSize >= totalCount}
-              className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* Pagination Controls */}
+        {!loading && totalCount > 0 && (
+          <div className="mt-6 flex justify-between items-center">
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
+            </span>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-slate-700 dark:text-slate-300">Page {currentPage}</span>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage * pageSize >= totalCount}
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Parent Selection Modal */}
+        <ParentSelectionModal
+          isOpen={showParentModal}
+          onClose={() => setShowParentModal(false)}
+          onSelect={handleParentSelect}
+          organizationalUnits={parentUnits}
+          loading={loadingParentUnits}
+          error={error}
+          currentPage={parentCurrentPage}
+          totalPages={parentTotalPages}
+          onPageChange={setParentCurrentPage}
+          searchTerm={parentSearchTerm}
+          onSearchChange={handleParentSearch}
+        />
+      </div>
     </div>
   );
 }
