@@ -52,7 +52,7 @@ function System1Dashboard() {
     },
     { 
       to: 'woredas', 
-      label: 'ወርዳዎች',
+      label: 'ወረዳዎች',
       icon: MapIcon,
       description: 'Manage woredas',
       color: 'violet'
@@ -143,8 +143,8 @@ function System1Dashboard() {
                     <div className={`absolute inset-0 bg-gradient-to-r from-${link.color}-50 to-${link.color}-100 dark:from-${link.color}-900/20 dark:to-${link.color}-800/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
                     <div className="relative p-6">
                       <div className="flex items-center space-x-4">
-                        <div className={`p-3 bg-${link.color}-100 dark:bg-${link.color}-900/50 rounded-lg group-hover:bg-${link.color}-200 dark:group-hover:bg-${link.color}-800/50 transition-colors duration-300`}>
-                          <link.icon className={`h-6 w-6 text-${link.color}-600 dark:text-${link.color}-300`} />
+                        <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/50 transition-all duration-300 transform group-hover:scale-110 group-hover:shadow-lg group-hover:-translate-y-1">
+                          <link.icon className="h-6 w-6 text-slate-800 dark:text-slate-100" />
                         </div>
                         <div>
                           <h3 className={`text-lg font-semibold text-slate-800 dark:text-slate-100 group-hover:text-${link.color}-700 dark:group-hover:text-${link.color}-400 transition-colors duration-300`}>
@@ -174,7 +174,7 @@ function System1Dashboard() {
                     <div className="relative p-6">
                       <div className="flex items-center space-x-4">
                         <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                          <link.icon className="h-6 w-6 text-slate-400 dark:text-slate-300" />
+                          <link.icon className="h-6 w-6 text-slate-800 dark:text-slate-100" />
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-slate-400 dark:text-slate-500">
