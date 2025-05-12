@@ -89,8 +89,8 @@ function SectorSubdivisionListPage() {
       setNewTypeName('');
       fetchTypes(debouncedSearchTerm); // Refresh the list (no page needed)
     } catch (err) {
-      setError("Failed to create sector subdivision type.");
       console.error("Error creating type:", err);
+      setError(`A sector subdivision type with the name '${newTypeName}' already exists. Please use a different name.`);
     }
   };
 
@@ -107,7 +107,7 @@ function SectorSubdivisionListPage() {
 
    const handleEditSubmit = async (e) => {
     e.preventDefault();
-     if (!editTypeName.trim()) return;
+    if (!editTypeName.trim()) return;
 
     try {
       await updateSectorSubdivisionType(currentEditItem.id, editTypeName);
@@ -116,8 +116,8 @@ function SectorSubdivisionListPage() {
       setEditTypeName('');
       fetchTypes(debouncedSearchTerm); // Refresh the list
     } catch (err) {
-      setError("Failed to update sector subdivision type.");
       console.error("Error updating type:", err);
+      setError(`A sector subdivision type with the name '${editTypeName}' already exists. Please use a different name.`);
     }
   };
 

@@ -563,54 +563,25 @@ function OrganizationalUnitListPage() {
 
    const handleCreateSubmit = async (e) => {
        e.preventDefault();
-
-       // Basic frontend validation (can be expanded)
-       if (!formData.name.trim()) {
-           setError("Organizational Unit Name is required.");
-           setTimeout(() => setError(null), 5000);
-           return;
-       }
-        // TODO: Add more specific validation based on currently visible/required fields
-        // Example: If Sector Subdivision Type dropdown is visible, check if it's selected
-        const fieldsToShow = getFormFieldsToShow(formData, divisions, parentOrganizationalUnits); // Get current form field visibility
-
-        if (fieldsToShow.sector_subdiv_type && !formData.sector_subdiv_type) {
-             setError("Sector Subdivision Type is required for this division.");
-             setTimeout(() => setError(null), 5000);
-             return;
-        }
-         if (fieldsToShow.subcity_subdiv_type && !formData.subcity_subdiv_type) {
-              setError("Subcity Subdivision Type is required for this division.");
-              setTimeout(() => setError(null), 5000);
-              return;
-         }
-         // Add validation for other conditionally required fields (e.g., Parent, Subcity, Woreda)
-
-
-       console.log("Submitting Create Form:", formData); // Log form data
-
        try {
-           // Call the create API function with the form data
            const response = await createOrganizationalUnit(formData);
            setShowCreateForm(false);
-           
-           // Refresh both the main list and the parent units list
            await Promise.all([
                fetchOrganizationalUnits(currentPage, pageSize, debouncedSearchTerm),
-               fetchDropdownData() // This will refresh parentOrganizationalUnits
+               fetchDropdownData()
            ]);
-           
-           setError(null); // Clear errors on success
+           setError(null);
        } catch (err) {
            console.error("Error creating organizational unit:", err);
-           // TODO: Handle API error, including displaying backend validation errors
-            if (err.response && err.response.data) {
-                 // Display backend validation errors if available
-                 setError("Failed to create organizational unit: " + JSON.stringify(err.response.data));
-             } else {
-                 setError("Failed to create organizational unit. Please try again.");
-             }
-            setTimeout(() => setError(null), 7000);
+           // Check for duplicate entry error in __all__ array
+           if (err.response?.data?.__all__?.[0]) {
+               setError(err.response.data.__all__[0]);
+           } else if (err.response?.data?.name?.[0]) {
+               setError(err.response.data.name[0]);
+           } else {
+               setError("Failed to create organizational unit. Please try again.");
+           }
+           setTimeout(() => setError(null), 7000);
        }
    };
 
@@ -643,50 +614,33 @@ function OrganizationalUnitListPage() {
 
    const handleEditSubmit = async (e) => {
        e.preventDefault();
-
-        // TODO: Add frontend validation based on currently visible/required fields
-        if (!formData.name.trim()) {
-            setError("Organizational Unit Name is required.");
-            setTimeout(() => setError(null), 5000);
-            return;
-        }
-         // TODO: Add more specific validation based on selected division/parent
-         const fieldsToShow = getFormFieldsToShow(formData, divisions, parentOrganizationalUnits); // Get current form field visibility
-
-         if (fieldsToShow.sector_subdiv_type && !formData.sector_subdiv_type) {
-              setError("Sector Subdivision Type is required for this division.");
-              setTimeout(() => setError(null), 5000);
-              return;
-         }
-          if (fieldsToShow.subcity_subdiv_type && !formData.subcity_subdiv_type) {
-               setError("Subcity Subdivision Type is required for this division.");
-               setTimeout(() => setError(null), 5000);
-               return;
-          }
-          // Add validation for other conditionally required fields (e.g., Parent, Subcity, Woreda)
-
-
-       console.log("Submitting Edit Form:", formData); // Log form data
-
-
        try {
-           // Call the update API function with the item ID and form data
            await updateOrganizationalUnit(currentEditItem.id, formData);
            setShowEditForm(false);
-           setCurrentEditItem(null); // Clear the item being edited
-           // Refresh the list
+           setCurrentEditItem(null);
+           setFormData({
+               name: '',
+               required_employees_no: '',
+               division: '',
+               sector_subdiv_type: '',
+               subcity_subdiv_type: '',
+               parent: '',
+               subcity: '',
+               woreda: '',
+           });
            fetchOrganizationalUnits(currentPage, pageSize, debouncedSearchTerm);
-            setError(null); // Clear errors on success
+           setError(null);
        } catch (err) {
            console.error("Error updating organizational unit:", err);
-            // TODO: Handle API error, including displaying backend validation errors
-            if (err.response && err.response.data) {
-                 // Display backend validation errors if available
-                 setError("Failed to update organizational unit: " + JSON.stringify(err.response.data));
-             } else {
-                 setError("Failed to update organizational unit. Please try again.");
-             }
-            setTimeout(() => setError(null), 7000);
+           // Check for duplicate entry error in __all__ array
+           if (err.response?.data?.__all__?.[0]) {
+               setError(err.response.data.__all__[0]);
+           } else if (err.response?.data?.name?.[0]) {
+               setError(err.response.data.name[0]);
+           } else {
+               setError("Failed to update organizational unit. Please try again.");
+           }
+           setTimeout(() => setError(null), 7000);
        }
    };
 

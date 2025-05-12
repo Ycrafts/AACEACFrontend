@@ -78,8 +78,8 @@ function SubcityListPage() {
       setNewSubcityName('');
       fetchSubcities(debouncedSearchTerm); // Refresh the list (no page needed)
     } catch (err) {
-      setError("Failed to create subcity.");
       console.error("Error creating subcity:", err);
+      setError(`A subcity with the name '${newSubcityName}' already exists. Please use a different name.`);
     }
   };
 
@@ -96,7 +96,7 @@ function SubcityListPage() {
 
    const handleEditSubmit = async (e) => {
     e.preventDefault();
-     if (!editSubcityName.trim()) return;
+    if (!editSubcityName.trim()) return;
 
     try {
       await updateSubcity(currentEditItem.id, editSubcityName);
@@ -105,8 +105,8 @@ function SubcityListPage() {
       setEditSubcityName('');
       fetchSubcities(debouncedSearchTerm); // Refresh the list
     } catch (err) {
-      setError("Failed to update subcity.");
       console.error("Error updating subcity:", err);
+      setError(`A subcity with the name '${editSubcityName}' already exists. Please use a different name.`);
     }
   };
 
