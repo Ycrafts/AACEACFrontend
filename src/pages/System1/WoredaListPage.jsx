@@ -117,25 +117,51 @@ function WoredaListPage() {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
-     // Ensure both name and subcity are selected
     if (!newWoredaName.trim() || !newWoredaSubcityId) {
-         setError("Woreda name and Subcity are required."); // Add validation message
+        setError("Woreda name and Subcity are required.");
          setTimeout(() => setError(null), 5000);
          return;
     }
 
     try {
-      // Use the createWoreda API function with both name and subcityId
       await createWoreda(newWoredaName, newWoredaSubcityId);
       setShowCreateForm(false);
       setNewWoredaName('');
-      setNewWoredaSubcityId(''); // Clear dropdown selection
-       // Refresh the list, staying on the current page and search term
+        setNewWoredaSubcityId('');
       fetchWoredas(currentPage, pageSize, debouncedSearchTerm);
-      setError(null); // Clear errors on success
+        setError(null);
     } catch (err) {
-      setError("Failed to create woreda.");
       console.error("Error creating woreda:", err);
+        // Log detailed error information
+        console.log("Error response status:", err.response?.status);
+        console.log("Error response data:", err.response?.data);
+        console.log("Error response headers:", err.response?.headers);
+        
+        let errorMessage = "Failed to create woreda. Please try again.";
+        
+        // Check if the response data is HTML (which might indicate a Django error page)
+        if (err.response?.data && typeof err.response.data === 'string' && err.response.data.includes('<!DOCTYPE html>')) {
+            errorMessage = "A server error occurred. Please try again later.";
+        } else if (err.response?.data) {
+            // Try to parse the error message from the response
+            const data = err.response.data;
+            
+            if (data.__all__ && Array.isArray(data.__all__)) {
+                errorMessage = data.__all__[0];
+            } else if (data.name && Array.isArray(data.name)) {
+                errorMessage = data.name[0];
+            } else if (data.detail) {
+                errorMessage = data.detail;
+            } else if (typeof data === 'string') {
+                errorMessage = data;
+            } else if (data.message) {
+                errorMessage = data.message;
+            } else if (data.error) {
+                errorMessage = data.error;
+            }
+        }
+        
+        setError(errorMessage);
        setTimeout(() => setError(null), 7000);
     }
   };
@@ -176,8 +202,37 @@ function WoredaListPage() {
       fetchWoredas(currentPage, pageSize, debouncedSearchTerm);
        setError(null); // Clear errors on success
     } catch (err) {
-      setError("Failed to update woreda.");
       console.error("Error updating woreda:", err);
+      // Log detailed error information
+      console.log("Error response status:", err.response?.status);
+      console.log("Error response data:", err.response?.data);
+      console.log("Error response headers:", err.response?.headers);
+      
+      let errorMessage = "Failed to update woreda. Please try again.";
+      
+      // Check if the response data is HTML (which might indicate a Django error page)
+      if (err.response?.data && typeof err.response.data === 'string' && err.response.data.includes('<!DOCTYPE html>')) {
+          errorMessage = "A server error occurred. Please try again later.";
+      } else if (err.response?.data) {
+          // Try to parse the error message from the response
+          const data = err.response.data;
+          
+          if (data.__all__ && Array.isArray(data.__all__)) {
+              errorMessage = data.__all__[0];
+          } else if (data.name && Array.isArray(data.name)) {
+              errorMessage = data.name[0];
+          } else if (data.detail) {
+              errorMessage = data.detail;
+          } else if (typeof data === 'string') {
+              errorMessage = data;
+          } else if (data.message) {
+              errorMessage = data.message;
+          } else if (data.error) {
+              errorMessage = data.error;
+          }
+      }
+      
+      setError(errorMessage);
        setTimeout(() => setError(null), 7000);
     }
   };

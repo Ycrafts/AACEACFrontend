@@ -285,7 +285,12 @@ function EmployeeListPage() {
             fetchEmployees(currentPage, pageSize, debouncedSearchTerm);
         } catch (err) {
             console.error("Error creating employee:", err);
-            setError("Failed to create employee");
+            if (err.response?.data?.phone_no) {
+                setError(err.response.data.phone_no[0]);
+            } else {
+                setError("Failed to create employee");
+            }
+            setTimeout(() => setError(null), 5000);
         }
     };
 
@@ -321,7 +326,12 @@ function EmployeeListPage() {
             fetchEmployees(currentPage, pageSize, debouncedSearchTerm);
         } catch (err) {
             console.error("Error updating employee:", err);
-            setError("Failed to update employee");
+            if (err.response?.data?.phone_no) {
+                setError(err.response.data.phone_no[0]);
+            } else {
+                setError("Failed to update employee");
+            }
+            setTimeout(() => setError(null), 5000);
         }
     };
 

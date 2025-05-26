@@ -578,10 +578,10 @@ function OrganizationalUnitListPage() {
                setError(err.response.data.__all__[0]);
            } else if (err.response?.data?.name?.[0]) {
                setError(err.response.data.name[0]);
-           } else {
-               setError("Failed to create organizational unit. Please try again.");
-           }
-           setTimeout(() => setError(null), 7000);
+             } else {
+                 setError("Failed to create organizational unit. Please try again.");
+             }
+            setTimeout(() => setError(null), 7000);
        }
    };
 
@@ -637,10 +637,10 @@ function OrganizationalUnitListPage() {
                setError(err.response.data.__all__[0]);
            } else if (err.response?.data?.name?.[0]) {
                setError(err.response.data.name[0]);
-           } else {
-               setError("Failed to update organizational unit. Please try again.");
-           }
-           setTimeout(() => setError(null), 7000);
+             } else {
+                 setError("Failed to update organizational unit. Please try again.");
+             }
+            setTimeout(() => setError(null), 7000);
        }
    };
 

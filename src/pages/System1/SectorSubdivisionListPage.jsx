@@ -107,7 +107,7 @@ function SectorSubdivisionListPage() {
 
    const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editTypeName.trim()) return;
+     if (!editTypeName.trim()) return;
 
     try {
       await updateSectorSubdivisionType(currentEditItem.id, editTypeName);

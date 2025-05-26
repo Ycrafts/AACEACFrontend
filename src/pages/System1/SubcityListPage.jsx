@@ -96,7 +96,7 @@ function SubcityListPage() {
 
    const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editSubcityName.trim()) return;
+     if (!editSubcityName.trim()) return;
 
     try {
       await updateSubcity(currentEditItem.id, editSubcityName);
