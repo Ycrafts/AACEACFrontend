@@ -615,7 +615,29 @@ function OrganizationalUnitListPage() {
    const handleEditSubmit = async (e) => {
        e.preventDefault();
        try {
-           await updateOrganizationalUnit(currentEditItem.id, formData);
+           // Add validation to prevent self-referential parent
+           if (formData.parent === currentEditItem.id) {
+               setError("An organizational unit cannot be its own parent");
+               setTimeout(() => setError(null), 5000);
+               return;
+           }
+
+           // Validate that parent ID exists if provided
+           if (formData.parent && !parentOrganizationalUnits.some(unit => unit.id === parseInt(formData.parent))) {
+               setError("Selected parent organizational unit does not exist");
+               setTimeout(() => setError(null), 5000);
+               return;
+           }
+
+           // Log the data being sent
+           console.log('Sending update data:', {
+               id: currentEditItem.id,
+               formData: formData
+           });
+
+           const response = await updateOrganizationalUnit(currentEditItem.id, formData);
+           console.log('Update response:', response);
+
            setShowEditForm(false);
            setCurrentEditItem(null);
            setFormData({
@@ -628,19 +650,31 @@ function OrganizationalUnitListPage() {
                subcity: '',
                woreda: '',
            });
-           fetchOrganizationalUnits(currentPage, pageSize, debouncedSearchTerm);
+           await fetchOrganizationalUnits(currentPage, pageSize, debouncedSearchTerm);
            setError(null);
        } catch (err) {
            console.error("Error updating organizational unit:", err);
-           // Check for duplicate entry error in __all__ array
+           console.error("Error details:", {
+               status: err.response?.status,
+               data: err.response?.data,
+               headers: err.response?.headers
+           });
+
+           // Check for specific error types
            if (err.response?.data?.__all__?.[0]) {
                setError(err.response.data.__all__[0]);
            } else if (err.response?.data?.name?.[0]) {
                setError(err.response.data.name[0]);
-             } else {
-                 setError("Failed to update organizational unit. Please try again.");
-             }
-            setTimeout(() => setError(null), 7000);
+           } else if (err.response?.data?.parent?.[0]) {
+               setError(err.response.data.parent[0]);
+           } else if (err.response?.data?.detail) {
+               setError(err.response.data.detail);
+           } else if (err.response?.status === 500) {
+               setError("Server error occurred. Please check the console for details and try again.");
+           } else {
+               setError("Failed to update organizational unit. Please try again.");
+           }
+           setTimeout(() => setError(null), 7000);
        }
    };
 

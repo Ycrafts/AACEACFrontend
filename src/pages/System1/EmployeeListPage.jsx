@@ -111,6 +111,65 @@ const ParentSelectionModal = ({
     );
 };
 
+// Add the OrganizationalUnitDetailsModal component after ParentSelectionModal
+const OrganizationalUnitDetailsModal = ({ isOpen, onClose, unit }) => {
+    if (!isOpen || !unit) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 w-full max-w-md shadow-xl transition-colors duration-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Organizational Unit Details</h2>
+                    <button 
+                        onClick={onClose}
+                        className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors duration-200"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <div className="space-y-3">
+                    <p className="text-slate-700 dark:text-slate-100">
+                        <span className="font-medium">Name:</span> {unit.name}
+                    </p>
+                    <p className="text-slate-700 dark:text-slate-100">
+                        <span className="font-medium">Division:</span> {unit.division_name || 'N/A'}
+                    </p>
+                    {unit.parent_name && (
+                        <p className="text-slate-700 dark:text-slate-100">
+                            <span className="font-medium">Parent:</span> {unit.parent_name}
+                        </p>
+                    )}
+                    {unit.sector_subdiv_type_name && (
+                        <p className="text-slate-700 dark:text-slate-100">
+                            <span className="font-medium">Sector Subdivision Type:</span> {unit.sector_subdiv_type_name}
+                        </p>
+                    )}
+                    {unit.subcity_subdiv_type_name && (
+                        <p className="text-slate-700 dark:text-slate-100">
+                            <span className="font-medium">Subcity Subdivision Type:</span> {unit.subcity_subdiv_type_name}
+                        </p>
+                    )}
+                    {unit.subcity_name && (
+                        <p className="text-slate-700 dark:text-slate-100">
+                            <span className="font-medium">Subcity:</span> {unit.subcity_name}
+                        </p>
+                    )}
+                    {unit.woreda_name && (
+                        <p className="text-slate-700 dark:text-slate-100">
+                            <span className="font-medium">Woreda:</span> {unit.woreda_name}
+                        </p>
+                    )}
+                    {unit.required_employees_no && (
+                        <p className="text-slate-700 dark:text-slate-100">
+                            <span className="font-medium">Required Employees:</span> {unit.required_employees_no}
+                        </p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 function EmployeeListPage() {
     // --- State Management ---
     const [employees, setEmployees] = useState([]);
@@ -154,6 +213,10 @@ function EmployeeListPage() {
     const [orgUnitTotalPages, setOrgUnitTotalPages] = useState(1);
     const [orgUnits, setOrgUnits] = useState([]);
     const [loadingOrgUnits, setLoadingOrgUnits] = useState(false);
+
+    // Add new state for details modal
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [selectedOrgUnit, setSelectedOrgUnit] = useState(null);
 
     // --- Data Fetching ---
     const fetchEmployees = async (page, size, search) => {
@@ -344,6 +407,19 @@ function EmployeeListPage() {
                 console.error("Error deleting employee:", err);
                 setError("Failed to delete employee");
             }
+        }
+    };
+
+    // Update the handleOrgUnitClick function
+    const handleOrgUnitClick = async (unitId) => {
+        try {
+            const response = await getOrganizationalUnits(1, 1, '', unitId);
+            const unit = response.data.results[0];
+            setSelectedOrgUnit(unit);
+            setShowDetailsModal(true);
+        } catch (err) {
+            console.error("Error fetching organizational unit details:", err);
+            setError("Failed to load organizational unit details");
         }
     };
 
@@ -598,8 +674,17 @@ function EmployeeListPage() {
                                                     {`${employee.fname} ${employee.mname ? employee.mname + ' ' : ''}${employee.lname}`}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{employee.phone_no}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                                                    {organizationalUnits.find(ou => ou.id === employee.organizationalunit)?.name || '-'}
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-100">
+                                                    {employee.organizationalunit_name ? (
+                                                        <button
+                                                            onClick={() => handleOrgUnitClick(employee.organizationalunit)}
+                                                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors duration-200"
+                                                        >
+                                                            {employee.organizationalunit_name}
+                                                        </button>
+                                                    ) : (
+                                                        'N/A'
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                                     {employee.role_name || '-'}
@@ -666,6 +751,12 @@ function EmployeeListPage() {
                 onPageChange={setOrgUnitCurrentPage}
                 searchTerm={orgUnitSearchTerm}
                 onSearchChange={setOrgUnitSearchTerm}
+            />
+            {/* Add the details modal */}
+            <OrganizationalUnitDetailsModal
+                isOpen={showDetailsModal}
+                onClose={() => setShowDetailsModal(false)}
+                unit={selectedOrgUnit}
             />
         </div>
     );

@@ -36,8 +36,8 @@ function HomePage({ onLogout }) {
     },
     {
       to: '/system2',
-      label: 'የህንፃ መዝገብ',
-      description: 'Building Management System',
+      label: 'መልካም አስተዳደር',
+      description: 'መልካም አስተዳደር',
       icon: BuildingOfficeIcon,
       color: 'emerald'
     }
